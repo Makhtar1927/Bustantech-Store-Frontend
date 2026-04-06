@@ -1,0 +1,351 @@
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Moon, Sun, Search, Menu, X, Smartphone, Wind, Coffee, ShieldAlert, LogOut, PackageSearch, Loader2, Laptop, Headphones } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCartStore } from '../store/useCartStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useProductStore } from '../store/useProductStore';
+import { apiFetch } from './api';
+
+const Navbar = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { cart, toggleCart } = useCartStore();
+  const { isAuthenticated, logout } = useAuthStore();
+  const { products, fetchProducts } = useProductStore();
+  const navigate = useNavigate();
+  
+  // Nouveaux états pour le suivi de commande
+  const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+  const [trackingId, setTrackingId] = useState('');
+  const [trackingResult, setTrackingResult] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
+  
+  // Nouveaux états pour la recherche globale
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // S'assure que les produits sont disponibles pour la recherche
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const searchResults = searchQuery.trim() === ''
+    ? []
+    : products.filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand?.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 6);
+
+  const itemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  const [isDarkMode, setIsDarkMode] = useState(
+    localStorage.getItem('theme') === 'dark' || 
+    (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  );
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // Fonction pour basculer le mode sombre
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  // Fonction d'appel à l'API pour rechercher la commande
+  const handleTrackOrder = async (e) => {
+    e.preventDefault();
+    if (!trackingId) return;
+    
+    setTrackingLoading(true);
+    setTrackingError('');
+    setTrackingResult(null);
+    
+    try {
+      const res = await apiFetch(`/orders/${trackingId}/status`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setTrackingResult(data);
+      } else {
+        setTrackingError(data.message || "Commande introuvable. Veuillez vérifier le numéro.");
+      }
+    } catch (err) {
+      setTrackingError("Une erreur est survenue lors de la recherche.");
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  // Fonction propre pour fermer la modale et réinitialiser son état
+  const closeTrackingModal = () => {
+    setIsTrackingOpen(false);
+    setTrackingResult(null);
+    setTrackingId('');
+    setTrackingError('');
+  };
+
+  return (
+    <>
+    <nav className="sticky top-0 z-50 w-full bg-white/80 dark:bg-bustantech-black/80 backdrop-blur-md border-b border-bustantech-gold/20 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+          
+          {/* LOGO */}
+          <Link to="/" className="flex-shrink-0 flex items-center">
+            <h1 className="text-2xl font-luxury font-bold text-bustantech-gold tracking-widest">
+              BUSTANTECH<span className="text-bustantech-black dark:text-white">STORE</span>
+            </h1>
+          </Link>
+
+          {/* NAVIGATION DESKTOP (Menu complet) */}
+          <div className="hidden md:flex space-x-8 items-center">
+            <Link to="/category/tech" className="flex items-center gap-2 text-sm font-medium hover:text-bustantech-gold transition-colors dark:text-white">
+              <Smartphone size={18} /> TÉLÉPHONES
+            </Link>
+            <Link to="/category/computers" className="flex items-center gap-2 text-sm font-medium hover:text-bustantech-gold transition-colors dark:text-white">
+              <Laptop size={18} /> ORDINATEURS
+            </Link>
+            <Link to="/category/accessories" className="flex items-center gap-2 text-sm font-medium hover:text-bustantech-gold transition-colors dark:text-white">
+              <Headphones size={18} /> ACCESSOIRES
+            </Link>
+            <Link to="/category/perfume" className="flex items-center gap-2 text-sm font-medium hover:text-bustantech-gold transition-colors dark:text-white">
+              <Wind size={18} /> PARFUMERIE
+            </Link>
+            <Link to="/category/coffee" className="flex items-center gap-2 text-sm font-medium hover:text-bustantech-gold transition-colors dark:text-white">
+              <Coffee size={18} /> CAFE
+            </Link>
+            {isAuthenticated && (
+              <>
+                <Link to="/admin" className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-bustantech-gold transition-colors">
+                  <ShieldAlert size={18} /> ADMIN
+                </Link>
+                <button 
+                  onClick={() => { logout(); navigate('/'); }}
+                  title="Se déconnecter"
+                  className="flex items-center gap-2 text-sm font-medium text-red-400 hover:text-red-600 transition-colors ml-4"
+                >
+                  <LogOut size={18} />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* OUTILS DESKTOP (Recherche, DarkMode, Panier, Suivi) */}
+          <div className="hidden md:flex items-center space-x-5">
+            <button onClick={() => setIsTrackingOpen(true)} aria-label="Suivre ma commande" title="Suivre ma commande" className="p-2 hover:text-bustantech-gold dark:text-white transition-colors">
+              <PackageSearch aria-hidden="true" size={22} />
+            </button>
+
+            <button onClick={() => setIsSearchOpen(true)} aria-label="Rechercher des produits" className="p-2 hover:text-bustantech-gold dark:text-white transition-colors">
+              <Search aria-hidden="true" size={22} />
+            </button>
+            
+            <button onClick={toggleDarkMode} aria-label={isDarkMode ? "Passer au mode clair" : "Passer au mode sombre"} className="p-2 rounded-full bg-bustantech-beige dark:bg-bustantech-gray text-bustantech-gold transition-all">
+              {isDarkMode ? <Sun aria-hidden="true" size={20} /> : <Moon aria-hidden="true" size={20} />}
+            </button>
+
+            <div className="relative p-2 cursor-pointer group" role="button" tabIndex={0} aria-label="Ouvrir le panier" onClick={toggleCart} onKeyDown={(e) => e.key === 'Enter' && toggleCart()}>
+              <ShoppingCart aria-hidden="true" size={24} className="group-hover:text-bustantech-gold transition-colors dark:text-white" />
+              {itemCount > 0 && (
+                <span className="absolute top-0 right-0 bg-bustantech-gold text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                  {itemCount}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Menu Mobile Button */}
+          <button className="md:hidden p-2 text-bustantech-black dark:text-white" aria-expanded={isMenuOpen} aria-label="Menu principal" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
+          </button>
+        </div>
+      </div>
+    </nav>
+
+      {/* MOBILE MENU (Animé) */}
+      {isMenuOpen && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden bg-white dark:bg-bustantech-black border-b border-bustantech-gold/20 px-4 py-6 space-y-4 shadow-xl"
+        >
+          {/* OUTILS MOBILES */}
+          <div className="flex items-start justify-between mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
+            <button onClick={() => { setIsTrackingOpen(true); setIsMenuOpen(false); }} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400">
+              <PackageSearch size={24} />
+              <span className="text-[10px] font-bold tracking-widest uppercase">Suivi</span>
+            </button>
+            <button onClick={() => { setIsSearchOpen(true); setIsMenuOpen(false); }} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400">
+              <Search size={24} />
+              <span className="text-[10px] font-bold tracking-widest uppercase">Chercher</span>
+            </button>
+            <div onClick={() => { toggleCart(); setIsMenuOpen(false); }} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400 relative cursor-pointer">
+              <ShoppingCart size={24} />
+              {itemCount > 0 && <span className="absolute -top-2 right-1 bg-bustantech-gold text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{itemCount}</span>}
+              <span className="text-[10px] font-bold tracking-widest uppercase">Panier</span>
+            </div>
+            <button onClick={toggleDarkMode} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400">
+              {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+              <span className="text-[10px] font-bold tracking-widest uppercase">Thème</span>
+            </button>
+          </div>
+
+          <Link to="/category/tech" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Téléphones</Link>
+          <Link to="/category/computers" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Ordinateurs</Link>
+          <Link to="/category/accessories" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Accessoires</Link>
+          <Link to="/category/perfume" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Parfums de Luxe</Link>
+          <Link to="/category/coffee" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Le Coin Café</Link>
+          
+          {isAuthenticated && (
+            <>
+              <div className="h-[1px] w-full bg-gray-200 dark:bg-gray-800 my-4"></div>
+              <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium text-gray-500 hover:text-bustantech-gold transition-colors">Espace Admin</Link>
+              <button 
+                onClick={() => { logout(); setIsMenuOpen(false); navigate('/'); }}
+                className="block w-full text-left text-lg font-medium text-red-500 hover:text-red-700 transition-colors"
+              >
+                Déconnexion
+              </button>
+            </>
+          )}
+        </motion.div>
+      )}
+
+      {/* MODALE DE SUIVI DE COMMANDE */}
+      {isTrackingOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-16 sm:pt-20 p-4 bg-black/60 backdrop-blur-sm overflow-y-auto cursor-pointer" onClick={closeTrackingModal}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()} // Empêche le clic à l'intérieur de la modale de la fermer
+            className="bg-white dark:bg-bustantech-black w-full max-w-md rounded-sm shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 cursor-default"
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-xl font-bold font-luxury tracking-wider dark:text-white flex items-center gap-2">
+                <PackageSearch aria-hidden="true" className="text-bustantech-gold" size={24} />
+                Suivre ma commande
+              </h3>
+              <button onClick={closeTrackingModal} aria-label="Fermer la modale" className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+                <X aria-hidden="true" size={24} />
+              </button>
+            </div>
+            
+            <div className="p-4 md:p-6">
+              <form onSubmit={handleTrackOrder} className="flex gap-2 mb-6">
+                <input 
+                  aria-label="Numéro de commande"
+                  type="number" 
+                  placeholder="Numéro (ex: 142)"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  className="flex-1 w-full px-4 py-3 text-base md:text-sm bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm focus:outline-none focus:border-bustantech-gold dark:text-white transition-colors"
+                />
+                <button type="submit" disabled={trackingLoading || !trackingId} className="px-6 py-3 bg-bustantech-gold text-white font-bold rounded-sm hover:bg-yellow-600 transition-colors disabled:opacity-50 flex items-center justify-center min-w-[110px]">
+                  {trackingLoading ? <Loader2 size={20} className="animate-spin" /> : "Chercher"}
+                </button>
+              </form>
+
+              {trackingError && <p className="text-red-500 text-sm text-center font-medium bg-red-50 dark:bg-red-900/20 p-3 rounded-sm">{trackingError}</p>}
+
+              {trackingResult && (
+                <div className="bg-gray-50 dark:bg-zinc-900/50 p-5 rounded-sm border border-gray-200 dark:border-gray-800 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Commande N°</span>
+                    <span className="font-bold dark:text-white text-lg">#{trackingResult.id.toString().padStart(4, '0')}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Montant Total</span>
+                    <span className="font-bold text-bustantech-gold">{new Intl.NumberFormat('fr-FR').format(trackingResult.total_amount)} FCFA</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+                    <span className="text-xs text-gray-400 uppercase tracking-widest mb-2">Statut actuel</span>
+                    <span className={`px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs shadow-sm ${
+                        trackingResult.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
+                        trackingResult.status === 'paid' ? 'bg-green-100 text-green-700 border border-green-200' : 
+                        trackingResult.status === 'shipped' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 
+                        trackingResult.status === 'delivered' ? 'bg-green-100 text-green-700 border border-green-200' : 
+                        trackingResult.status === 'cancelled' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-gray-100 text-gray-700 border border-gray-200'
+                      }`}>
+                      {trackingResult.status === 'pending' ? '⏳ EN ATTENTE' : trackingResult.status === 'paid' ? '💳 PAYÉE' : trackingResult.status === 'shipped' ? '📦 EXPÉDIÉE' : trackingResult.status === 'delivered' ? '✅ LIVRÉE' : trackingResult.status === 'cancelled' ? '❌ ANNULÉE' : trackingResult.status}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODALE DE RECHERCHE GLOBALE */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-16 sm:pt-20 p-4 bg-black/60 backdrop-blur-sm overflow-y-auto cursor-pointer" onClick={() => setIsSearchOpen(false)}>
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            className="bg-white dark:bg-bustantech-black w-full max-w-3xl rounded-sm shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 cursor-default"
+          >
+            <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-800">
+              <Search className="text-gray-400 mr-4" size={24} />
+              <input
+                aria-label="Champ de recherche globale"
+                autoFocus
+                type="text"
+                placeholder="Rechercher un iPhone, un Parfum, un Café..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent border-none focus:outline-none dark:text-white text-lg md:text-xl font-medium"
+              />
+              <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} aria-label="Fermer la recherche" className="text-gray-400 hover:text-bustantech-gold transition-colors ml-4 p-2 bg-gray-50 dark:bg-zinc-900 rounded-sm">
+                <X aria-hidden="true" size={20} />
+              </button>
+            </div>
+
+            {searchQuery.trim() !== '' && (
+              <div className="max-h-[60vh] overflow-y-auto">
+                {searchResults.length > 0 ? (
+                  <div className="flex flex-col">
+                    {searchResults.map(product => {
+                      // Si l'URL est une vidéo, on affiche sa miniature (.jpg généré par Cloudinary)
+                      const imageUrl = product.image_url?.match(/\.(mp4|mov|webm)$/i) ? product.image_url.replace(/\.(mp4|mov|webm)$/i, '.jpg') : product.image_url;
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => { navigate(`/product/${product.id}`); setIsSearchOpen(false); setSearchQuery(''); }}
+                          className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900/50 cursor-pointer border-b border-gray-50 dark:border-gray-800/50 transition-colors"
+                        >
+                          <img src={imageUrl || 'https://via.placeholder.com/100'} alt={product.name} className="w-14 h-14 object-cover rounded-sm border border-gray-100 dark:border-gray-800" />
+                          <div className="flex-1">
+                            <h4 className="font-bold dark:text-white">{product.name}</h4>
+                            <p className="text-xs text-bustantech-gold uppercase tracking-widest">{product.brand}</p>
+                          </div>
+                          <span className="font-bold text-bustantech-gold">
+                            {new Intl.NumberFormat('fr-FR').format(product.base_price)} FCFA
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+                    Aucun produit ne correspond à <span className="font-bold dark:text-white">"{searchQuery}"</span>.
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Navbar;
