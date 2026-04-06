@@ -1,11 +1,34 @@
-import React, { useState } from 'react';
-import { Send, CheckCircle2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, CheckCircle2, Loader2, Compass, Phone, Mail, MapPin } from 'lucide-react';
 import { apiFetch } from './api';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle'); // idle, loading, success, error
   const [message, setMessage] = useState('');
+  const [settings, setSettings] = useState({
+    store_name: 'BoustaneTech Store',
+    contact_phone: '221774133645',
+    contact_email: 'contact@boustantech.com',
+    contact_address: 'Pikine Saf Bar, Dakar',
+    maps_link: 'https://maps.app.goo.gl/tUo6M6r6uXyS1JbZ8',
+    whatsapp_number: '221774133645'
+  });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await apiFetch('/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (err) {
+        console.error("Erreur chargement settings footer:", err);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -47,7 +70,7 @@ const Footer = () => {
           {/* BRANDING & NEWSLETTER */}
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-luxury font-bold text-bustantech-gold tracking-widest mb-4">
-              BUSTANTECH<span className="text-black dark:text-white">STORE</span>
+              BOUSTANETECH<span className="text-black dark:text-white">STORE</span>
             </h2>
             <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-6 text-sm">
               L'alliance parfaite entre l'innovation technologique, le luxe de la haute parfumerie et l'art du café de spécialité.
@@ -97,17 +120,29 @@ const Footer = () => {
           <div>
             <h3 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider mb-4">Contact</h3>
             <ul className="space-y-3 text-sm text-gray-500 dark:text-gray-400">
-              <li>+221 77 000 00 00</li>
-              <li>contact@bustantech.com</li>
-              <li>Vdn prolongée, Lot 45</li>
-              <li>Dakar, Sénégal</li>
+              <li>
+                <a href={`tel:${settings.contact_phone}`} className="hover:text-bustantech-gold transition-colors flex items-center gap-2">
+                  <Phone size={14} className="text-bustantech-gold" /> {settings.contact_phone}
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${settings.contact_email}`} className="hover:text-bustantech-gold transition-colors flex items-center gap-2">
+                  <Mail size={14} className="text-bustantech-gold" /> {settings.contact_email}
+                </a>
+              </li>
+              <li>
+                <a href={settings.maps_link} target="_blank" rel="noopener noreferrer" className="hover:text-bustantech-gold transition-colors flex items-start gap-2">
+                  <MapPin size={14} className="text-bustantech-gold mt-1 shrink-0" />
+                  <span>{settings.contact_address.split(',').map((part, i) => <React.Fragment key={i}>{part}{i === 0 && <br/>}</React.Fragment>)}</span>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
         {/* COPYRIGHT */}
         <div className="border-t border-gray-100 dark:border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
-          <p>&copy; {new Date().getFullYear()} Bustantech Store. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} {settings.store_name}. Tous droits réservés.</p>
           <div className="flex space-x-4">
             <a href="#" className="hover:text-bustantech-gold transition-colors">Mentions Légales</a>
             <a href="#" className="hover:text-bustantech-gold transition-colors">Politique de Confidentialité</a>

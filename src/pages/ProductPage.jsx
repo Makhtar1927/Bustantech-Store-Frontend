@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useProductStore } from '../store/useProductStore';
 import { useCartStore } from '../store/useCartStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { ChevronRight, ShoppingBag, Star, Loader2, CheckCircle2 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { apiFetch } from '../components/api';
@@ -156,6 +157,10 @@ const ProductPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <Helmet>
+        <title>{currentProduct.name} | BoustaneTech Store</title>
+        <meta name="description" content={currentProduct.description?.substring(0, 160) || `Découvrez ${currentProduct.name} chez BoustaneTech Store`} />
+      </Helmet>
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-8">
         <Link to="/" className="hover:text-bustantech-gold">Accueil</Link>
@@ -166,9 +171,25 @@ const ProductPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Colonne Image */}
+        {/* Colonne Image / Vidéo */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="relative aspect-square bg-gray-100 dark:bg-bustantech-gray rounded-sm overflow-hidden shadow-lg">
-          <img src={currentProduct.image_url} alt={currentProduct.name} className="w-full h-full object-cover" />
+          {currentProduct.image_url?.match(/\.(mp4|mov|webm)$/i) ? (
+            <video 
+              src={currentProduct.image_url} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              controls
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <img 
+              src={currentProduct.image_url || 'https://via.placeholder.com/800'} 
+              alt={currentProduct.name} 
+              className="w-full h-full object-cover" 
+            />
+          )}
           
           {/* CONTENEUR DES BADGES */}
           <div className="absolute top-4 left-4 flex flex-col items-start gap-2 z-10">

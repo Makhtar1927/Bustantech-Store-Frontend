@@ -63,7 +63,7 @@ const CategoryGrids = () => {
             <h2 className="text-3xl sm:text-4xl font-luxury font-bold dark:text-white">Choisissez votre univers</h2>
           </div>
           <p className="text-gray-500 max-w-sm text-sm">
-            Bustantech Store réunit le meilleur de trois mondes pour une expérience shopping unique.
+            BoustaneTech Store réunit le meilleur de trois mondes pour une expérience shopping unique.
           </p>
         </div>
 

@@ -69,7 +69,7 @@ export const useCartStore = create((set, get) => ({
     const cart = get().cart;
     const total = get().getTotal();
     
-    let message = `*COMMANDE BUSTANTECH STORE*\n`;
+    let message = `*COMMANDE BoustaneTech Store*\n`;
     message += `---------------------------\n`;
     
     cart.forEach(item => {

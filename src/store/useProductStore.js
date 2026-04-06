@@ -103,7 +103,7 @@ const DEMO_PRODUCTS = [
   {
     id: 'cof-1',
     category: 'coffee',
-    brand: 'Bustantech Roasters',
+    brand: 'BoustaneTech Roasters',
     name: 'Éthiopie Yirgacheffe (Mouture Fine)',
     base_price: '38.00',
     image_url: 'https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&q=80&w=800',
@@ -112,7 +112,7 @@ const DEMO_PRODUCTS = [
   {
     id: 'cof-2',
     category: 'coffee',
-    brand: 'Bustantech Roasters',
+    brand: 'BoustaneTech Roasters',
     name: 'Colombie Supremo (Mouture Espresso)',
     base_price: '34.00',
     image_url: 'https://images.unsplash.com/photo-1610632380989-680fe0659131?auto=format&fit=crop&q=80&w=800',
@@ -121,7 +121,7 @@ const DEMO_PRODUCTS = [
   {
     id: 'cof-3',
     category: 'coffee',
-    brand: 'Bustantech Premium',
+    brand: 'BoustaneTech Premium',
     name: 'Blue Mountain Blend (Mouture Filtre)',
     base_price: '65.00',
     image_url: 'https://images.unsplash.com/photo-1587734195503-904fca47e0e9?auto=format&fit=crop&q=80&w=800',
@@ -165,10 +165,10 @@ export const useProductStore = create((set, get) => ({
     }
   },
 
-  // Fonction unifiée pour charger toutes les données de l'admin en une seule fois
-  fetchAdminData: async () => {
+  // Fonction unifiée pour charger toutes les données de l'admin
+  fetchAdminData: async (force = false) => {
     const { isInitialLoaded, isFetching } = get();
-    if (isInitialLoaded || isFetching) return;
+    if (!force && (isInitialLoaded || isFetching)) return;
 
     set({ loading: true, isFetching: true, error: null });
 
@@ -280,9 +280,8 @@ export const useProductStore = create((set, get) => ({
       
       if (!response.ok) throw new Error("Erreur lors de l'ajout du produit");
       
-      const data = await response.json();
-      // Ajoute le vrai produit retourné par PostgreSQL/Cloudinary au store
-      set(state => ({ products: [data.product, ...state.products] }));
+      // Recharge les données pour s'assurer de l'intégrité (statistiques, db relationships)
+      await get().fetchAdminData(true);
       return true;
     } catch (err) {
       console.error("Échec de la création du produit :", err);
@@ -299,9 +298,8 @@ export const useProductStore = create((set, get) => ({
       
       if (!response.ok) throw new Error("Erreur lors de la modification du produit");
       
-      const data = await response.json();
-      // Met à jour le produit modifié dans le store local
-      set(state => ({ products: state.products.map(p => p.id === id ? data.product : p) }));
+      // Recharge les données et statistiques (au cas où le prix/catégorie change la stat)
+      await get().fetchAdminData(true);
       return true;
     } catch (err) {
       console.error("Échec de la modification :", err);
@@ -315,9 +313,8 @@ export const useProductStore = create((set, get) => ({
         method: 'DELETE',
       });
       
-      if (!response.ok) throw new Error("Erreur lors de la suppression du produit");
-      
-      set(state => ({ products: state.products.filter(p => p.id !== id) }));
+      // Recharge depuis la base de données
+      await get().fetchAdminData(true);
       return true;
     } catch (err) {
       console.error("Échec de la suppression :", err);

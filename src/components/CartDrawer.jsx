@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, MessageCircle, Loader2 } from 'lucide-react';
+import { X, Trash2, MessageCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { apiFetch } from './api';
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const { cart, getTotal, removeFromCart, updateQuantity, clearCart } = useCartStore();
-  const WHATSAPP_NUMBER = "221772476926"; // Numéro de Pape Makhtar Aidara
 
-  // 1. Tarifs de livraison par zone
+  // États pour les réglages dynamiques
+  const [settings, setSettings] = useState({
+    whatsapp_number: "221774133645",
+    delivery_cost_dakar: 2000,
+    delivery_cost_suburbs: 3000,
+    delivery_cost_regions: 5000
+  });
+
+  // 1. Tarifs de livraison par zone (Mapés sur les réglages)
   const DELIVERY_ZONES = {
-    'dakar': { name: 'Dakar & Banlieue', cost: 2000 },
-    'rufisque': { name: 'Rufisque & Keur Massar', cost: 3000 },
-    'regions': { name: 'Autres Régions du Sénégal', cost: 5000 },
+    'dakar': { name: 'Dakar', cost: settings.delivery_cost_dakar },
+    'suburbs': { name: 'Banlieue / Hors Dakar', cost: settings.delivery_cost_suburbs },
+    'regions': { name: 'Régions (Sénégal)', cost: settings.delivery_cost_regions },
     'store': { name: 'Retrait en Magasin', cost: 0 }
   };
 
@@ -20,8 +27,25 @@ const CartDrawer = ({ isOpen, onClose }) => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [formError, setFormError] = useState('');
   const [deliveryZone, setDeliveryZone] = useState('dakar'); // Zone par défaut
+
+  // --- RÉCUPÉRATION DES RÉGLAGES ---
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await apiFetch('/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (err) {
+        console.error("Erreur settings cart:", err);
+      }
+    };
+    if (isOpen) loadSettings();
+  }, [isOpen]);
 
   // --- GESTION DES CODES PROMO ---
   const [promoCodeInput, setPromoCodeInput] = useState('');
@@ -125,17 +149,20 @@ const CartDrawer = ({ isOpen, onClose }) => {
       }
       message += `\n📦 *Livraison :* ${DELIVERY_ZONES[deliveryZone].name} (+${new Intl.NumberFormat('fr-FR').format(shippingCost)} FCFA)\n`;
       message += `💰 *TOTAL À PAYER : ${new Intl.NumberFormat('fr-FR').format(finalTotal)} FCFA*\n\n`;
-      message += `Bonjour Pape Makhtar Aidara, je souhaite confirmer ma commande.`;
+      message += `Bonjour BoustaneTech Store, je souhaite confirmer ma commande.`;
 
       const encodedMessage = encodeURIComponent(message);
-      const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-
-      // Ouverture de WhatsApp dans un nouvel onglet pour ne pas quitter la boutique
-      window.open(whatsappLink, '_blank');
-
-      // Vider le panier et fermer le tiroir
-      clearCart();
-      onClose();
+      const whatsappLink = `https://wa.me/${settings.whatsapp_number}?text=${encodedMessage}`;
+      
+      // Afficher le succès pendant 2 secondes avant de fermer
+      setIsSuccess(true);
+      
+      setTimeout(() => {
+        setIsSuccess(false);
+        clearCart();
+        onClose();
+        window.open(whatsappLink, '_blank');
+      }, 2500);
   };
 
   return (
@@ -151,14 +178,42 @@ const CartDrawer = ({ isOpen, onClose }) => {
           
           {/* Drawer */}
           <motion.div 
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="cart-drawer-title"
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-bustantech-black z-[70] shadow-2xl p-4 sm:p-6 flex flex-col"
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-bustantech-black z-[70] shadow-2xl p-4 sm:p-6 flex flex-col overflow-hidden"
           >
-            <div className="flex justify-between items-center border-b border-bustantech-gold/20 pb-4">
+            {/* OVERLAY DE SUCCÈS */}
+            <AnimatePresence>
+              {isSuccess && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 z-[80] bg-white dark:bg-bustantech-black flex flex-col items-center justify-center text-center p-6"
+                >
+                  <motion.div
+                    initial={{ scale: 0.5, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', bounce: 0.5 }}
+                  >
+                    <CheckCircle2 size={100} className="text-green-500 mb-6" />
+                  </motion.div>
+                  <h3 className="text-2xl font-luxury font-bold dark:text-white mb-2">Commande Transmise !</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Confirmation en cours sur WhatsApp...</p>
+                  <div className="mt-8 flex gap-2">
+                    <div className="w-2 h-2 bg-bustantech-gold rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-bustantech-gold rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-bustantech-gold rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <div className="flex justify-between items-center border-b border-bustantech-gold/20 pb-4 shrink-0">
               <h2 id="cart-drawer-title" className="text-2xl font-luxury font-bold dark:text-white">Votre Panier</h2>
               <div className="flex items-center gap-2">
                 {cart.length > 0 && (
@@ -177,103 +232,106 @@ const CartDrawer = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Liste des articles */}
-            <div className="flex-1 overflow-y-auto py-6 space-y-6">
+            {/* ZONE DÉFILANTE (Articles + Formulaire + Total) */}
+            <div className="flex-1 overflow-y-auto py-4 space-y-6 pr-2">
               {cart.length === 0 ? (
                 <p className="text-center text-gray-500 py-10">Votre panier est vide.</p>
               ) : (
-                cart.map((item) => (
-                  <div key={item.id} className="flex gap-4 border-b border-gray-50 pb-4">
-                    <div className="flex-1">
-                      <h4 className="font-bold dark:text-white text-sm">{item.name}</h4>
-                      <p className="text-xs text-bustantech-gold uppercase tracking-tighter">{item.variant}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <div className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 rounded-sm">
-                          <button aria-label="Diminuer la quantité" onClick={() => updateQuantity(item.id, -1)} className="px-2 py-1 md:px-3 md:py-1 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300 transition-colors">-</button>
-                          <span className="text-sm font-medium dark:text-gray-300 w-4 text-center">{item.quantity}</span>
-                          <button aria-label="Augmenter la quantité" onClick={() => updateQuantity(item.id, 1)} className="px-2 py-1 md:px-3 md:py-1 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300 transition-colors">+</button>
+                <div className="space-y-6">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex gap-4 border-b border-gray-50 dark:border-gray-800 pb-4">
+                      <div className="flex-1">
+                        <h4 className="font-bold dark:text-white text-sm">{item.name}</h4>
+                        <p className="text-xs text-bustantech-gold uppercase tracking-tighter">{item.variant}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 rounded-sm">
+                            <button aria-label="Diminuer la quantité" onClick={() => updateQuantity(item.id, -1)} className="px-2 py-1 md:px-3 md:py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300 transition-colors">-</button>
+                            <span className="text-sm font-medium dark:text-gray-300 w-4 text-center">{item.quantity}</span>
+                            <button aria-label="Augmenter la quantité" onClick={() => updateQuantity(item.id, 1)} className="px-2 py-1 md:px-3 md:py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300 transition-colors">+</button>
+                          </div>
+                          <span className="font-bold text-bustantech-gold">{new Intl.NumberFormat('fr-FR').format(item.price * item.quantity)} FCFA</span>
                         </div>
-                        <span className="font-bold text-bustantech-gold">{new Intl.NumberFormat('fr-FR').format(item.price * item.quantity)} FCFA</span>
                       </div>
+                      <button aria-label={`Supprimer ${item.name} du panier`} onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors p-2 self-start border border-transparent rounded-md">
+                        <Trash2 size={18} />
+                      </button>
                     </div>
-                    <button aria-label={`Supprimer ${item.name} du panier`} onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors p-2 self-start border border-transparent rounded-md">
-                      <Trash2 size={18} />
-                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* FORMULAIRE & RÉCAPITULATIF */}
+              {cart.length > 0 && (
+                <div className="space-y-6">
+                  {/* FORMULAIRE CLIENT */}
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <label htmlFor="customerName" className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Nom Complet</label>
+                      <input id="customerName" type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ex: Pape Moussa" className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label htmlFor="customerPhone" className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Numéro de Téléphone</label>
+                      <input id="customerPhone" type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Ex: 77 123 45 67" className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label htmlFor="deliveryZone" className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Zone de Livraison</label>
+                      <select id="deliveryZone" value={deliveryZone} onChange={(e) => setDeliveryZone(e.target.value)} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors cursor-pointer">
+                        {Object.entries(DELIVERY_ZONES).map(([key, zone]) => (
+                          <option key={key} value={key}>
+                            {zone.name} {zone.cost > 0 ? `(+${new Intl.NumberFormat('fr-FR').format(zone.cost)} FCFA)` : '(Gratuit)'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {formError && <p className="text-xs text-center text-red-500">{formError}</p>}
                   </div>
-                ))
+
+                  {/* CHAMP CODE PROMO */}
+                  <div className="pt-2">
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={promoCodeInput} 
+                        onChange={(e) => setPromoCodeInput(e.target.value)} 
+                        placeholder="Code promo (Optionnel)" 
+                        className="flex-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors uppercase" 
+                      />
+                      <button type="button" onClick={handleApplyPromo} disabled={!promoCodeInput.trim()} className="px-4 py-2 bg-bustantech-black dark:bg-zinc-800 text-white rounded-sm font-bold text-xs hover:bg-bustantech-gold transition-colors disabled:opacity-50">
+                        APPLIQUER
+                      </button>
+                    </div>
+                    {promoMessage.text && (
+                      <p className={`text-xs mt-2 font-bold ${promoMessage.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>{promoMessage.text}</p>
+                    )}
+                  </div>
+
+                  {/* RÉCAPITULATIF DES PRIX */}
+                  <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4 pb-2">
+                    <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                      <span>Sous-total</span>
+                      <span>{new Intl.NumberFormat('fr-FR').format(subtotal)} FCFA</span>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between items-center text-sm font-bold text-green-600 dark:text-green-500">
+                        <span>Remise ({appliedPromo.code})</span>
+                        <span>-{new Intl.NumberFormat('fr-FR').format(discountAmount)} FCFA</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                      <span>Frais de livraison</span>
+                      <span>{shippingCost > 0 ? `+${new Intl.NumberFormat('fr-FR').format(shippingCost)} FCFA` : 'Offerts'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xl font-bold dark:text-white pt-2 border-t border-gray-100 dark:border-gray-800">
+                      <span>Total TTC</span>
+                      <span className="text-bustantech-gold">{new Intl.NumberFormat('fr-FR').format(finalTotal)} FCFA</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Total et Bouton WhatsApp */}
-            <div className="border-t border-bustantech-gold/20 pt-6 space-y-4 mt-auto">
-              {/* FORMULAIRE CLIENT */}
-              {cart.length > 0 && (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="customerName" className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Nom Complet</label>
-                    <input id="customerName" type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ex: Pape Moussa" className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
-                  </div>
-                  <div>
-                    <label htmlFor="customerPhone" className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Numéro de Téléphone</label>
-                    <input id="customerPhone" type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Ex: 77 123 45 67" className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
-                  </div>
-                  <div>
-                    <label htmlFor="deliveryZone" className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Zone de Livraison</label>
-                    <select id="deliveryZone" value={deliveryZone} onChange={(e) => setDeliveryZone(e.target.value)} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors cursor-pointer">
-                      {Object.entries(DELIVERY_ZONES).map(([key, zone]) => (
-                        <option key={key} value={key}>
-                          {zone.name} {zone.cost > 0 ? `(+${new Intl.NumberFormat('fr-FR').format(zone.cost)} FCFA)` : '(Gratuit)'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {formError && <p className="text-xs text-center text-red-500">{formError}</p>}
-                </div>
-              )}
-
-              {/* CHAMP CODE PROMO */}
-              {cart.length > 0 && (
-                <div className="pt-2">
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={promoCodeInput} 
-                      onChange={(e) => setPromoCodeInput(e.target.value)} 
-                      placeholder="Code promo (Optionnel)" 
-                      className="flex-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 text-base md:text-sm dark:text-white focus:border-bustantech-gold outline-none transition-colors uppercase" 
-                    />
-                    <button type="button" onClick={handleApplyPromo} disabled={!promoCodeInput.trim()} className="px-4 py-2 bg-bustantech-black dark:bg-zinc-800 text-white rounded-sm font-bold text-xs hover:bg-bustantech-gold transition-colors disabled:opacity-50">
-                      APPLIQUER
-                    </button>
-                  </div>
-                  {promoMessage.text && (
-                    <p className={`text-xs mt-2 font-bold ${promoMessage.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>{promoMessage.text}</p>
-                  )}
-                </div>
-              )}
-
-              {/* RÉCAPITULATIF DES PRIX */}
-              <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4">
-                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                  <span>Sous-total</span>
-                  <span>{new Intl.NumberFormat('fr-FR').format(subtotal)} FCFA</span>
-                </div>
-                {discountAmount > 0 && (
-                  <div className="flex justify-between items-center text-sm font-bold text-green-600 dark:text-green-500">
-                    <span>Remise ({appliedPromo.code})</span>
-                    <span>-{new Intl.NumberFormat('fr-FR').format(discountAmount)} FCFA</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                  <span>Frais de livraison</span>
-                  <span>{shippingCost > 0 ? `+${new Intl.NumberFormat('fr-FR').format(shippingCost)} FCFA` : 'Offerts'}</span>
-                </div>
-                <div className="flex justify-between items-center text-xl font-bold dark:text-white pt-2 border-t border-gray-100 dark:border-gray-800">
-                  <span>Total TTC</span>
-                  <span className="text-bustantech-gold">{new Intl.NumberFormat('fr-FR').format(finalTotal)} FCFA</span>
-                </div>
-              </div>
-              
+            {/* BOUTON COMMANDER - FIXE EN BAS */}
+            <div className="pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto shrink-0 space-y-3">
               <button 
                 onClick={handleOrderSubmit}
                 disabled={cart.length === 0 || isSubmitting}
@@ -291,7 +349,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                   </>
                 )}
               </button>
-              <p className="text-[10px] text-center text-gray-400 uppercase tracking-widest">Paiement à la livraison ou via Wave/Orange Money</p>
+              <p className="text-[10px] text-center text-gray-400 uppercase tracking-widest pb-1">Paiement à la livraison ou via Wave/Orange Money</p>
             </div>
           </motion.div>
         </>

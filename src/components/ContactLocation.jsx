@@ -17,7 +17,7 @@ const ContactLocation = () => {
           >
             <div className="space-y-4">
               <h3 className="text-bustantech-gold font-bold tracking-widest text-sm">NOUS RENDRE VISITE</h3>
-              <h2 className="text-3xl md:text-4xl font-luxury font-bold dark:text-white">Bustantech Experience Center</h2>
+              <h2 className="text-3xl md:text-4xl font-luxury font-bold dark:text-white">BoustaneTech Experience Center</h2>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Retrouvez tous nos univers Tech, Parfumerie et Café dans notre showroom. 
                 Essais de produits et dégustations de café offertes sur place.
@@ -31,7 +31,7 @@ const ContactLocation = () => {
                 </div>
                 <div>
                   <h4 className="font-bold dark:text-white text-sm">Adresse</h4>
-                  <p className="text-gray-500 text-xs">Vdn prolongée, Lot 45, Dakar, Sénégal</p>
+                  <p className="text-gray-500 text-xs">Pikine Saf Bar, Dakar, Sénégal</p>
                 </div>
               </div>
 
@@ -51,7 +51,7 @@ const ContactLocation = () => {
                 </div>
                 <div>
                   <h4 className="font-bold dark:text-white text-sm">Contact Direct</h4>
-                  <p className="text-gray-500 text-xs">+221 77 000 00 00</p>
+                  <p className="text-gray-500 text-xs">+221 77 413 36 45</p>
                 </div>
               </div>
 
@@ -80,10 +80,10 @@ const ContactLocation = () => {
             className="relative h-[300px] md:h-[450px] w-full rounded-sm overflow-hidden border-4 border-white dark:border-bustantech-black shadow-2xl"
           >
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15437.113063853177!2d-17.472145!3d14.708226!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDQyJzI5LjYiTiAxN8KwMjgnMTkuNyJX!5e0!3m2!1sfr!2ssn!4v1625500000000!5m2!1sfr!2ssn" 
+              src="https://maps.google.com/maps?q=14.765917,-17.394389&hl=fr&z=16&output=embed" 
               width="100%" 
               height="100%" 
-              title="Carte Google Maps indiquant l'emplacement du Bustantech Experience Center"
+              title="Carte Google Maps indiquant l'emplacement du BoustaneTech Experience Center"
               style={{ border: 0, filter: 'grayscale(0.5) contrast(1.1)' }} 
               allowFullScreen="" 
               loading="lazy"

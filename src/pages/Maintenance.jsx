@@ -1,0 +1,56 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { HardHat, Wrench, Clock, Phone } from 'lucide-react';
+
+const Maintenance = () => {
+    // On pourrait aussi charger ici le téléphone depuis l'API pour être 100% dynamique
+    return (
+        <div className="min-h-screen bg-white dark:bg-bustantech-black flex flex-col items-center justify-center p-6 text-center">
+            <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="max-w-2xl"
+            >
+                <div className="mb-8 relative inline-block">
+                    <div className="absolute inset-0 bg-bustantech-gold blur-3xl opacity-20 rounded-full animate-pulse"></div>
+                    <motion.div 
+                        animate={{ rotate: [0, 5, -5, 0] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative z-10 p-6 bg-bustantech-beige dark:bg-zinc-900 rounded-full border border-bustantech-gold/30"
+                    >
+                        <HardHat size={80} className="text-bustantech-gold" />
+                    </motion.div>
+                </div>
+                
+                <h1 className="text-4xl md:text-6xl font-luxury font-bold dark:text-white mb-6 uppercase tracking-widest">
+                    Maintenance en Cours
+                </h1>
+                
+                <p className="text-gray-500 dark:text-gray-400 text-lg md:text-xl mb-12 max-w-xl mx-auto leading-relaxed">
+                    Nous mettons à jour notre collection exclusive pour vous offrir la meilleure expérience technologique et sensorielle possible.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <div className="p-6 bg-gray-50 dark:bg-zinc-900 rounded-sm border border-gray-100 dark:border-gray-800">
+                        <Clock className="text-bustantech-gold mx-auto mb-3" size={24} />
+                        <h3 className="font-bold dark:text-white uppercase tracking-wider text-xs mb-1">Retour Prévu</h3>
+                        <p className="text-sm text-gray-500">D'ici peu de temps</p>
+                    </div>
+                    <div className="p-6 bg-gray-50 dark:bg-zinc-900 rounded-sm border border-gray-100 dark:border-gray-800">
+                        <Phone className="text-bustantech-gold mx-auto mb-3" size={24} />
+                        <h3 className="font-bold dark:text-white uppercase tracking-wider text-xs mb-1">Besoin d'aide ?</h3>
+                        <p className="text-sm text-gray-500">+221 77 413 36 45</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-[0.3em]">
+                    <span className="w-12 h-[1px] bg-gray-200 dark:bg-gray-800"></span>
+                    BoustaneTech Store
+                    <span className="w-12 h-[1px] bg-gray-200 dark:bg-gray-800"></span>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
+export default Maintenance;

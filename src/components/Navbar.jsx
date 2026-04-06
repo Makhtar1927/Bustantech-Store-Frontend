@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Moon, Sun, Search, Menu, X, Smartphone, Wind, Coffee, ShieldAlert, LogOut, PackageSearch, Loader2, Laptop, Headphones } from 'lucide-react';
+import { ShoppingCart, Moon, Sun, Search, Menu, X, Smartphone, Wind, Coffee, ShieldAlert, LogOut, PackageSearch, Loader2, Laptop, Headphones, HardHat } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
@@ -10,10 +10,16 @@ import { apiFetch } from './api';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { cart, toggleCart } = useCartStore();
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, logout, user } = useAuthStore();
   const { products, fetchProducts } = useProductStore();
   const navigate = useNavigate();
   
+  // États pour les réglages dynamiques
+  const [settings, setSettings] = useState({
+    store_name: 'BoustaneTech Store',
+    maintenance_mode: false
+  });
+
   // Nouveaux états pour le suivi de commande
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [trackingId, setTrackingId] = useState('');
@@ -25,9 +31,19 @@ const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // S'assure que les produits sont disponibles pour la recherche
+  // S'assure que les produits et réglages sont disponibles
   useEffect(() => {
     fetchProducts();
+    const loadSettings = async () => {
+      try {
+        const res = await apiFetch('/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (err) {}
+    };
+    loadSettings();
   }, [fetchProducts]);
 
   const searchResults = searchQuery.trim() === ''
@@ -88,6 +104,11 @@ const Navbar = () => {
     setTrackingError('');
   };
 
+  // Découpage du nom du site pour le logo
+  const storeParts = settings.store_name.toUpperCase().split(' ');
+  const mainName = storeParts[0] || 'BOUSTANETECH';
+  const subName = storeParts.slice(1).join('') || 'STORE';
+
   return (
     <>
     <nav className="sticky top-0 z-50 w-full bg-white/80 dark:bg-bustantech-black/80 backdrop-blur-md border-b border-bustantech-gold/20 transition-colors duration-300">
@@ -95,14 +116,19 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-20">
           
           {/* LOGO */}
-          <Link to="/" className="flex-shrink-0 flex items-center">
+          <Link to="/" className="flex-shrink-0 flex items-center gap-3">
             <h1 className="text-2xl font-luxury font-bold text-bustantech-gold tracking-widest">
-              BUSTANTECH<span className="text-bustantech-black dark:text-white">STORE</span>
+              {mainName}<span className="text-bustantech-black dark:text-white">{subName}</span>
             </h1>
+            {settings.maintenance_mode && isAuthenticated && (
+              <div className="flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold border border-red-200">
+                <HardHat size={12} /> MAINTENANCE
+              </div>
+            )}
           </Link>
 
           {/* NAVIGATION DESKTOP (Menu complet) */}
-          <div className="hidden md:flex space-x-8 items-center">
+          <div className="hidden xl:flex space-x-8 items-center">
             <Link to="/category/tech" className="flex items-center gap-2 text-sm font-medium hover:text-bustantech-gold transition-colors dark:text-white">
               <Smartphone size={18} /> TÉLÉPHONES
             </Link>
@@ -135,7 +161,7 @@ const Navbar = () => {
           </div>
 
           {/* OUTILS DESKTOP (Recherche, DarkMode, Panier, Suivi) */}
-          <div className="hidden md:flex items-center space-x-5">
+          <div className="hidden xl:flex items-center space-x-5">
             <button onClick={() => setIsTrackingOpen(true)} aria-label="Suivre ma commande" title="Suivre ma commande" className="p-2 hover:text-bustantech-gold dark:text-white transition-colors">
               <PackageSearch aria-hidden="true" size={22} />
             </button>
@@ -159,7 +185,7 @@ const Navbar = () => {
           </div>
 
           {/* Menu Mobile Button */}
-          <button className="md:hidden p-2 text-bustantech-black dark:text-white" aria-expanded={isMenuOpen} aria-label="Menu principal" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <button className="xl:hidden p-2 text-bustantech-black dark:text-white" aria-expanded={isMenuOpen} aria-label="Menu principal" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
           </button>
         </div>
@@ -171,7 +197,7 @@ const Navbar = () => {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-white dark:bg-bustantech-black border-b border-bustantech-gold/20 px-4 py-6 space-y-4 shadow-xl"
+          className="xl:hidden bg-white dark:bg-bustantech-black border-b border-bustantech-gold/20 px-4 py-6 space-y-4 shadow-xl"
         >
           {/* OUTILS MOBILES */}
           <div className="flex items-start justify-between mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">

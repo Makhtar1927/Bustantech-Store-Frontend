@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProductStore } from '../store/useProductStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { PackageSearch, Plus, LayoutDashboard, Settings, Trash2, Edit, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, TrendingUp, Users, DollarSign, ShoppingBag, X, MessageSquare, Star, UserPlus, Shield, Download, Printer, Activity, LogOut, Menu, Link, Loader2 } from 'lucide-react';
+import { PackageSearch, Plus, LayoutDashboard, Settings, Trash2, Edit, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, TrendingUp, Users, DollarSign, ShoppingBag, X, MessageSquare, Star, UserPlus, Shield, Download, Printer, Activity, LogOut, Menu, Link, Loader2, Filter, Save } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { apiFetch } from '../components/api';
 
@@ -35,6 +35,8 @@ const Admin = () => {
   const isInitialLoaded = useProductStore(state => state.isInitialLoaded);
   const isFetchingStats = useProductStore(state => state.isFetchingStats);
   const isFetchingOrders = useProductStore(state => state.isFetchingOrders);
+  const fetchOrders = useProductStore(state => state.fetchOrders);
+  const fetchStats = useProductStore(state => state.fetchStats);
   
   const hasCalledInitialFetch = React.useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,10 +71,20 @@ const Admin = () => {
 
   // Nouveaux états pour le journal d'audit
   const [auditLogs, setAuditLogs] = useState([]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'catalog', 'orders', 'settings'
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Nouveaux états pour les paramètres du site
+  const [siteSettings, setSiteSettings] = useState({
+    store_name: '', contact_phone: '', contact_email: '', contact_address: '',
+    maps_link: '', whatsapp_number: '', facebook_link: '', instagram_link: '',
+    tiktok_link: '', maintenance_mode: false, delivery_cost_dakar: 2000,
+    delivery_cost_suburbs: 3000, delivery_cost_regions: 5000
+  });
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Récupération de l'utilisateur depuis le state du store (Référence stable)
   const user = useAuthStore(state => state.user);
@@ -195,6 +207,68 @@ const Admin = () => {
     }
   }, [activeTab, userRole]);
 
+  // Charger les paramètres du site
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      const loadSettings = async () => {
+        try {
+          const res = await apiFetch('/settings');
+          if (res.ok) setSiteSettings(await res.json());
+        } catch (err) { console.error("Erreur settings:", err); }
+      };
+      loadSettings();
+    }
+  }, [activeTab]);
+
+  const handleUpdateSettings = async (e) => {
+    e.preventDefault();
+    setIsUpdatingSettings(true);
+    try {
+      const res = await apiFetch('/settings', {
+        method: 'PATCH',
+        body: JSON.stringify(siteSettings)
+      });
+      if (res.ok) {
+        showNotification("Paramètres mis à jour avec succès !");
+      } else {
+        const error = await res.json();
+        showNotification(error.error || "Une erreur est survenue.");
+      }
+    } catch (err) {
+      showNotification("Erreur de connexion au serveur.");
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return showNotification("Les nouveaux mots de passe ne correspondent pas.");
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await apiFetch('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+      if (res.ok) {
+        showNotification("Mot de passe modifié avec succès !");
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        const error = await res.json();
+        showNotification(error.error || "Erreur de changement de mot de passe.");
+      }
+    } catch (err) {
+      showNotification("Erreur de connexion.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Fonction pour ouvrir la modale en mode "Ajout"
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -230,6 +304,8 @@ const Admin = () => {
     data.append('category_id', formData.category);
     data.append('base_price', formData.base_price);
     data.append('compare_at_price', formData.compare_at_price);
+    data.append('is_on_sale', formData.compare_at_price && parseFloat(formData.compare_at_price) > parseFloat(formData.base_price) ? 'true' : 'false');
+    
     
     // Le champ 'image' correspond au middleware backend : upload.single('image')
     if (imageFile) {
@@ -453,9 +529,9 @@ const Admin = () => {
     invoiceWindow.document.close();
   };
 
-  // 1. Filtrage
+  // 1. Filtrage (Sécurisé pour éviter les crashs si product.name est null)
   let processedProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    product && product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // 2. Tri par Prix
@@ -685,8 +761,8 @@ const Admin = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-white dark:bg-bustantech-black p-6 rounded-sm shadow-sm border border-gray-100 dark:border-gray-800">
                 <h3 className="text-lg font-bold dark:text-white mb-6">Évolution des Commandes et Revenus</h3>
-                <div className="h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-80 w-full min-h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={0}>
                   <BarChart 
                     data={stats?.graph || []}
                     className="cursor-pointer"
@@ -722,9 +798,9 @@ const Admin = () => {
 
               <div className="bg-white dark:bg-bustantech-black p-6 rounded-sm shadow-sm border border-gray-100 dark:border-gray-800">
                 <h3 className="text-lg font-bold dark:text-white mb-6">Ventes par Catégorie</h3>
-                <div className="h-80 w-full flex items-center justify-center">
+                <div className="h-80 w-full flex items-center justify-center min-h-[320px]">
                   {stats.categorySales?.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={0}>
                       <PieChart>
                         <Pie
                           data={stats?.categorySales || []}
@@ -815,8 +891,8 @@ const Admin = () => {
                   <td className="p-4 flex items-center gap-4">
                     <img src={product.image_url} alt={product.name} className="w-14 h-14 object-cover rounded-sm border border-gray-100 dark:border-gray-800" />
                     <div>
-                      <p className="font-bold dark:text-white">{product.name}</p>
-                      <p className="text-xs text-bustantech-gold font-medium uppercase tracking-widest">{product.brand}</p>
+                      <p className="font-bold dark:text-white">{product.name || 'Produit sans nom'}</p>
+                      <p className="text-xs text-bustantech-gold font-medium uppercase tracking-widest">{product.brand || 'Sans Marque'}</p>
                     </div>
                   </td>
                   <td className="p-4 dark:text-gray-300 uppercase text-xs tracking-widest">
@@ -1142,58 +1218,137 @@ const Admin = () => {
           </div>
         )}
 
-        {/* SECTION : ÉQUIPE */}
-        {activeTab === 'team' && (
-          <div className="animate-in fade-in duration-300">
-            <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-8 gap-4">
-              <div>
-                <h1 className="text-3xl font-bold dark:text-white">Équipe & Accès</h1>
-                <p className="text-gray-500 mt-2">Gérez les comptes de vos collaborateurs et leurs permissions.</p>
-              </div>
-              <button 
-                onClick={() => setIsEmployeeModalOpen(true)}
-                className="bg-bustantech-gold hover:bg-bustantech-gold-dark text-white px-6 py-3 rounded-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-bustantech-gold/20"
-              >
-                <UserPlus size={20} />
-                Ajouter un employé
-              </button>
+        {/* SECTION : PARAMÈTRES */}
+        {activeTab === 'settings' && (
+          <div className="animate-in fade-in duration-300 space-y-8">
+            <div>
+              <h1 className="text-3xl font-bold dark:text-white">Paramètres Généraux</h1>
+              <p className="text-gray-500 mt-2">Configurez l'identité visuelle et les coordonnées de la boutique.</p>
             </div>
 
-            <div className="bg-white dark:bg-bustantech-black rounded-sm shadow-sm border border-gray-100 dark:border-gray-800 overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[700px]">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-zinc-900 text-gray-400 uppercase text-xs tracking-wider border-b border-gray-100 dark:border-gray-800">
-                    <th className="p-4 font-medium whitespace-nowrap">Nom de l'employé</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Email de connexion</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Rôle</th>
-                    <th className="p-4 font-medium text-right whitespace-nowrap">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {employees.map(employee => (
-                    <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors">
-                      <td className="p-4 font-bold dark:text-white flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">{employee.full_name.charAt(0)}</div>
-                        {employee.full_name}
-                      </td>
-                      <td className="p-4 dark:text-gray-300">{employee.email}</td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${employee.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
-                          {employee.role === 'admin' ? 'Administrateur' : 'Modérateur'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button onClick={() => handleDeleteEmployee(employee.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Révoquer l'accès">
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Branding & Contact */}
+              <div className="xl:col-span-2 space-y-6">
+                <form onSubmit={handleUpdateSettings} className="bg-white dark:bg-bustantech-black p-6 rounded-sm shadow-sm border border-gray-100 dark:border-gray-800 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2 flex items-center justify-between mb-2">
+                       <h3 className="font-bold dark:text-white uppercase tracking-widest text-sm text-bustantech-gold">Information de la Boutique</h3>
+                       <div className="flex items-center gap-2">
+                         <span className="text-xs text-gray-400">Mode Maintenance</span>
+                         <button 
+                           type="button"
+                           onClick={() => setSiteSettings({...siteSettings, maintenance_mode: !siteSettings.maintenance_mode})}
+                           className={`w-12 h-6 rounded-full transition-colors relative ${siteSettings.maintenance_mode ? 'bg-red-500' : 'bg-gray-200 dark:bg-zinc-800'}`}
+                         >
+                           <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${siteSettings.maintenance_mode ? 'translate-x-6' : ''}`}></div>
+                         </button>
+                       </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Nom de la Boutique</label>
+                      <input value={siteSettings.store_name} onChange={e => setSiteSettings({...siteSettings, store_name: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Email de Contact</label>
+                      <input value={siteSettings.contact_email} onChange={e => setSiteSettings({...siteSettings, contact_email: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Téléphone WhatsApp (International)</label>
+                      <input value={siteSettings.whatsapp_number} onChange={e => setSiteSettings({...siteSettings, whatsapp_number: e.target.value})} placeholder="22177..." className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Lien Google Maps</label>
+                      <input value={siteSettings.maps_link} onChange={e => setSiteSettings({...siteSettings, maps_link: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div className="md:col-span-2">
+                       <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Adresse Physique</label>
+                       <input value={siteSettings.contact_address} onChange={e => setSiteSettings({...siteSettings, contact_address: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-3 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <h3 className="md:col-span-3 font-bold dark:text-white uppercase tracking-widest text-sm text-bustantech-gold">Tarifs de Livraison (FCFA)</h3>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Dakar</label>
+                      <input type="number" value={siteSettings.delivery_cost_dakar} onChange={e => setSiteSettings({...siteSettings, delivery_cost_dakar: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Autour de Dakar / Banlieue</label>
+                      <input type="number" value={siteSettings.delivery_cost_suburbs} onChange={e => setSiteSettings({...siteSettings, delivery_cost_suburbs: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Régions</label>
+                      <input type="number" value={siteSettings.delivery_cost_regions} onChange={e => setSiteSettings({...siteSettings, delivery_cost_regions: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <h3 className="md:col-span-2 font-bold dark:text-white uppercase tracking-widest text-sm text-bustantech-gold">Réseaux Sociaux</h3>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Instagram</label>
+                      <input value={siteSettings.instagram_link} onChange={e => setSiteSettings({...siteSettings, instagram_link: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">TikTok</label>
+                      <input value={siteSettings.tiktok_link} onChange={e => setSiteSettings({...siteSettings, tiktok_link: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button 
+                      type="submit"
+                      disabled={isUpdatingSettings}
+                      className="bg-bustantech-gold text-white px-8 py-3 rounded-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {isUpdatingSettings ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                      SAUVEGARDER LES RÉGLAGES
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Sécurité Compte */}
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-bustantech-black p-6 rounded-sm shadow-sm border border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Shield className="text-bustantech-gold" size={24} />
+                    <h3 className="font-bold dark:text-white uppercase tracking-widest text-sm">Sécurité du Compte</h3>
+                  </div>
+                  
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Mot de passe actuel</label>
+                      <input required type="password" value={passwordForm.currentPassword} onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Nouveau mot de passe</label>
+                      <input required type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Confirmer</label>
+                      <input required type="password" value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-sm px-4 py-2 dark:text-white focus:border-bustantech-gold outline-none transition-colors" />
+                    </div>
+                    <button 
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-bustantech-black dark:bg-zinc-800 text-white py-3 rounded-sm font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {isSubmitting ? <Loader2 size={18} className="animate-spin mx-auto" /> : "Changer le mot de passe"}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-red-50 dark:bg-red-950/20 p-6 rounded-sm border border-red-500/20">
+                  <h3 className="font-bold text-red-600 dark:text-red-500 uppercase tracking-widest text-xs mb-2">Zone de Danger</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">La suppression du compte administrateur est réservée au propriétaire principal.</p>
+                  <button className="text-xs font-bold text-red-500 border border-red-500/30 px-4 py-2 rounded-sm hover:bg-red-500 hover:text-white transition-all w-full">DEMANDER FERMETURE DU COMPTE</button>
+                </div>
+              </div>
             </div>
           </div>
         )}
+
         </div>
       </main>
 
