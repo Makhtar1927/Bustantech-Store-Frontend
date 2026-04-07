@@ -16,8 +16,12 @@ const decodeJWT = (token) => {
   }
 };
 
-// Vérifie la présence et la validité du token au premier chargement
+// Vérifie la présence et la validité du token au premier chargement (SSR safe)
 const checkInitialAuth = () => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return { token: null, isAuthenticated: false };
+  }
+  
   const token = localStorage.getItem('bustantech_token');
   if (!token) return { token: null, isAuthenticated: false };
   
@@ -31,7 +35,7 @@ const checkInitialAuth = () => {
 };
 
 const initialState = checkInitialAuth();
-const initialUser = initialState.token ? decodeJWT(initialState.token) : null;
+const initialUser = (typeof window !== 'undefined' && initialState.token) ? decodeJWT(initialState.token) : null;
 
 export const useAuthStore = create((set, get) => ({
   token: initialState.token,
