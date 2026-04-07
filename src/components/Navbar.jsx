@@ -195,48 +195,76 @@ const Navbar = () => {
       {/* MOBILE MENU (Animé) */}
       {isMenuOpen && (
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="xl:hidden bg-white dark:bg-bustantech-black border-b border-bustantech-gold/20 px-4 py-6 space-y-4 shadow-xl"
+          className="xl:hidden fixed top-[80px] left-0 right-0 w-full bg-white/95 dark:bg-bustantech-black/95 backdrop-blur-xl border-b border-bustantech-gold/20 px-6 py-8 shadow-2xl z-40 max-h-[calc(100vh-80px)] overflow-y-auto"
         >
           {/* OUTILS MOBILES */}
-          <div className="flex items-start justify-between mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
-            <button onClick={() => { setIsTrackingOpen(true); setIsMenuOpen(false); }} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400">
-              <PackageSearch size={24} />
+          <div className="grid grid-cols-4 gap-3 mb-8 pb-8 border-b border-gray-100 dark:border-gray-800">
+            <button onClick={() => { setIsTrackingOpen(true); setIsMenuOpen(false); }} className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-gray-600 hover:text-bustantech-gold dark:text-gray-400 transition-all">
+              <PackageSearch size={22} className="mb-2" />
               <span className="text-[10px] font-bold tracking-widest uppercase">Suivi</span>
             </button>
-            <button onClick={() => { setIsSearchOpen(true); setIsMenuOpen(false); }} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400">
-              <Search size={24} />
+            <button onClick={() => { setIsSearchOpen(true); setIsMenuOpen(false); }} className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-gray-600 hover:text-bustantech-gold dark:text-gray-400 transition-all">
+              <Search size={22} className="mb-2" />
               <span className="text-[10px] font-bold tracking-widest uppercase">Chercher</span>
             </button>
-            <div onClick={() => { toggleCart(); setIsMenuOpen(false); }} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400 relative cursor-pointer">
-              <ShoppingCart size={24} />
-              {itemCount > 0 && <span className="absolute -top-2 right-1 bg-bustantech-gold text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{itemCount}</span>}
+            <button onClick={() => { toggleCart(); setIsMenuOpen(false); }} className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-gray-600 hover:text-bustantech-gold dark:text-gray-400 transition-all relative">
+              <ShoppingCart size={22} className="mb-2" />
+              {itemCount > 0 && <span className="absolute top-2 right-2 bg-bustantech-gold text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{itemCount}</span>}
               <span className="text-[10px] font-bold tracking-widest uppercase">Panier</span>
-            </div>
-            <button onClick={toggleDarkMode} className="flex flex-col items-center gap-2 text-gray-500 hover:text-bustantech-gold dark:text-gray-400">
-              {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+            </button>
+            <button onClick={toggleDarkMode} className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-gray-600 hover:text-bustantech-gold dark:text-gray-400 transition-all">
+              {isDarkMode ? <Sun size={22} className="mb-2" /> : <Moon size={22} className="mb-2" />}
               <span className="text-[10px] font-bold tracking-widest uppercase">Thème</span>
             </button>
           </div>
 
-          <Link to="/category/tech" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Téléphones</Link>
-          <Link to="/category/computers" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Ordinateurs</Link>
-          <Link to="/category/accessories" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Accessoires</Link>
-          <Link to="/category/perfume" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Parfums de Luxe</Link>
-          <Link to="/category/coffee" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium dark:text-white hover:text-bustantech-gold transition-colors">Le Coin Café</Link>
+          <div className="space-y-2">
+            <Link to="/category/tech" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 text-lg font-medium dark:text-white hover:text-bustantech-gold transition-all group">
+              <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 group-hover:bg-bustantech-gold/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-bustantech-gold transition-colors">
+                <Smartphone size={22} />
+              </div>
+              <span className="flex-1">Téléphones & Tech</span>
+            </Link>
+            <Link to="/category/computers" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 text-lg font-medium dark:text-white hover:text-bustantech-gold transition-all group">
+              <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 group-hover:bg-bustantech-gold/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-bustantech-gold transition-colors">
+                <Laptop size={22} />
+              </div>
+              <span className="flex-1">Ordinateurs</span>
+            </Link>
+            <Link to="/category/accessories" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 text-lg font-medium dark:text-white hover:text-bustantech-gold transition-all group">
+              <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 group-hover:bg-bustantech-gold/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-bustantech-gold transition-colors">
+                <Headphones size={22} />
+              </div>
+              <span className="flex-1">Accessoires</span>
+            </Link>
+            <Link to="/category/perfume" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 text-lg font-medium dark:text-white hover:text-bustantech-gold transition-all group">
+              <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 group-hover:bg-bustantech-gold/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-bustantech-gold transition-colors">
+                <Wind size={22} />
+              </div>
+              <span className="flex-1">Parfums de Luxe</span>
+            </Link>
+            <Link to="/category/coffee" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-900 text-lg font-medium dark:text-white hover:text-bustantech-gold transition-all group">
+              <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 group-hover:bg-bustantech-gold/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-bustantech-gold transition-colors">
+                <Coffee size={22} />
+              </div>
+              <span className="flex-1">Le Coin Café</span>
+            </Link>
+          </div>
           
           {isAuthenticated && (
-            <>
-              <div className="h-[1px] w-full bg-gray-200 dark:bg-gray-800 my-4"></div>
-              <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium text-gray-500 hover:text-bustantech-gold transition-colors">Espace Admin</Link>
+            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
+              <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-center gap-3 w-full p-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-all font-bold tracking-wide">
+                <ShieldAlert size={20} /> Espace Admin
+              </Link>
               <button 
                 onClick={() => { logout(); setIsMenuOpen(false); navigate('/'); }}
-                className="block w-full text-left text-lg font-medium text-red-500 hover:text-red-700 transition-colors"
+                className="flex items-center justify-center gap-3 w-full p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all font-bold tracking-wide"
               >
-                Déconnexion
+                <LogOut size={20} /> Déconnexion
               </button>
-            </>
+            </div>
           )}
         </motion.div>
       )}
