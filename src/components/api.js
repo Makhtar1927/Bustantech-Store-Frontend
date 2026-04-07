@@ -1,7 +1,7 @@
 import { useAuthStore } from '../store/useAuthStore';
 
-// On utilise exactement le même hôte que le navigateur pour éviter que ce dernier ne bloque la requête (CORS)
-const BASE_URL = `http://${window.location.hostname}:5000/api`;
+// Utilisation d'une variable d'environnement pour l'API en production (Vercel/Render)
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const apiFetch = async (endpoint, options = {}) => {
   // 1. On récupère le token de manière globale hors d'un composant React
