@@ -466,8 +466,8 @@ const Admin = () => {
       itemsHtml += `
         <tr>
           <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">
-            <strong>${item.product_name}</strong><br/>
-            <small style="color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">${item.variant || ''}</small>
+            <strong>${item.product_name || 'Produit supprimé'}</strong><br/>
+            ${item.variant && String(item.variant).trim().toLowerCase() !== 'null' ? `<small style="color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">${item.variant}</small>` : ''}
           </td>
           <td style="padding: 12px 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
           <td style="padding: 12px 10px; border-bottom: 1px solid #eee; text-align: right;">${new Intl.NumberFormat('fr-FR').format(item.unit_price)} FCFA</td>
@@ -496,7 +496,7 @@ const Admin = () => {
         </head>
         <body>
           <div class="header">
-            <div class="logo">BUSTANTECH<span>STORE</span></div>
+            <div class="logo">BOUSTANETECH<span> STORE</span></div>
             <div class="invoice-details">
               <h1 style="margin:0 0 5px 0; color: #18181b; letter-spacing: 2px;">FACTURE</h1>
               <strong>N° :</strong> #${order.id.toString().padStart(4, '0')}<br/>
@@ -507,8 +507,8 @@ const Admin = () => {
           <div class="customer-info">
             <h3 style="color: #d4af37; margin-bottom: 10px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">Adressée à :</h3>
             <strong>${order.customer_name}</strong><br/>
-            📞 ${order.customer_phone}<br/>
-            📍 ${order.customer_address || 'Sénégal'}
+            Téléphone : ${order.customer_phone}<br/>
+            Adresse : ${order.customer_address || 'Sénégal'}
           </div>
 
           <table>
@@ -1093,8 +1093,8 @@ const Admin = () => {
                                 {order.items?.map((item, idx) => (
                                   <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-zinc-900/50">
                                     <td className="p-3">
-                                      <p className="font-bold dark:text-white">{item.product_name}</p>
-                                      {item.variant && <p className="text-[10px] text-bustantech-gold uppercase tracking-widest mt-0.5">{item.variant}</p>}
+                                      <p className="font-bold dark:text-white">{item.product_name || <span className="text-gray-400 italic">Produit supprimé</span>}</p>
+                                      {item.variant && String(item.variant).trim().toLowerCase() !== 'null' && <p className="text-[10px] text-bustantech-gold uppercase tracking-widest mt-0.5">{item.variant}</p>}
                                     </td>
                                     <td className="p-3 text-center font-medium dark:text-gray-300">{item.quantity}</td>
                                     <td className="p-3 text-right dark:text-gray-400">{new Intl.NumberFormat('fr-FR').format(item.unit_price)} FCFA</td>
