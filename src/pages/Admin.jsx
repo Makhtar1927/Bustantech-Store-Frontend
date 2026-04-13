@@ -109,7 +109,8 @@ const Admin = () => {
     const controller = new AbortController();
     const connectSSE = async () => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5000/api/notifications/stream`, {
+        const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const response = await fetch(`${BASE_URL}/notifications/stream`, {
           headers: { 'Authorization': `Bearer ${token}` },
           signal: controller.signal
         });
