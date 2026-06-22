@@ -1,14 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Star, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Star, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { useCartStore } from '../store/useCartStore';
 
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCartStore();
+  const { addToCart, toggleCart } = useCartStore();
   const [isHovered, setIsHovered] = useState(false);
   const [showToast, setShowToast] = useState(false); // État pour la notification
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Filtrer les variantes invalides (nulles) retournées par json_agg() en cas de LEFT JOIN sans résultat
   const validVariants = product.variants?.filter(v => v && v.id) || [];
@@ -182,23 +193,56 @@ const ProductCard = ({ product }) => {
         </div>
       </div>
 
-      {/* TOAST DE NOTIFICATION (Fixé en bas à droite de l'écran) */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            role="alert"
-            aria-live="assertive"
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="fixed bottom-4 left-4 right-4 md:left-auto md:bottom-6 md:right-6 z-[110] bg-green-500 text-white px-4 sm:px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-center md:justify-start gap-3 cursor-default"
-            onClick={(e) => e.stopPropagation()} // Empêche de cliquer à travers le toast
-          >
-            <CheckCircle2 size={24} />
-            <span className="font-bold tracking-wide text-sm">{product.name} a été ajouté au panier.</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* TOAST DE NOTIFICATION STYLÉ & RESPONSIVE */}
+      {createPortal(
+        <AnimatePresence>
+          {showToast && (
+            <motion.div
+              initial={{ opacity: 0, y: isMobile ? -50 : 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: isMobile ? -20 : 20, scale: 0.9 }}
+              role="alert"
+              aria-live="assertive"
+              className="fixed top-4 left-4 right-4 md:top-auto md:bottom-6 md:left-auto md:right-6 md:w-auto md:max-w-md z-[200] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-emerald-500/20 dark:border-emerald-500/30 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.4)] p-4 rounded-2xl flex items-center justify-between gap-4 cursor-default border-l-4 border-l-emerald-500"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative shrink-0">
+                  <img 
+                    src={imageUrl} 
+                    alt={product.name} 
+                    className="w-12 h-12 object-cover rounded-lg border border-gray-100 dark:border-zinc-800" 
+                    onError={(e) => { e.target.src = 'https://placehold.co/100x100/png?text=Image'; }}
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm">
+                    <CheckCircle2 size={12} className="text-white fill-white dark:fill-emerald-500 dark:text-white" />
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Ajouté au panier</p>
+                  <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate max-w-[150px] sm:max-w-[200px]">{product.name}</h4>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); toggleCart(); setShowToast(false); }}
+                  className="px-3.5 py-2 bg-bustantech-gold text-white text-xs font-bold rounded-xl hover:bg-bustantech-gold-dark transition-all duration-200 uppercase tracking-wider shadow-sm hover:shadow-md"
+                >
+                  Voir
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setShowToast(false); }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1"
+                  aria-label="Fermer la notification"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.article>
   );
 };
